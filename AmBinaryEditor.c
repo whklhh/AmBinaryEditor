@@ -719,6 +719,7 @@ static int AddTagChunk(PARSER *ap, char *tag_name, uint32_t deep, uint32_t count
 	XMLCONTENTCHUNK *root = ap->xmlcontent_chunk;
 	XMLCONTENTCHUNK *node = root;
 	XMLCONTENTCHUNK *parent = NULL;
+	int cur_dep = 0;
 
 	XMLCONTENTCHUNK *target_start = NULL;
 	XMLCONTENTCHUNK *target_end = NULL;
@@ -729,15 +730,35 @@ static int AddTagChunk(PARSER *ap, char *tag_name, uint32_t deep, uint32_t count
         return -1;
     }
 
-	while (node && deep)
+	while (node)
 	{
         if (node->chunk_type == CHUNK_STARTTAG)
         {
-            parent = node;
-            deep--;
+            deep -= 1;
         }
+		if(count==0){
+			parent = node;
+			break;
+		}
+		if(node->chunk_type == CHUNK_ENDTAG)
+		{
+			deep += 1;
+			if(deep==0){
+				count --;
+			}
+		}
+
         node = node->child;
 	}
+	// while (count--)
+	// {
+    //     parent = parent->child;
+    //     if (parent->chunk_type == CHUNK_ENDNS || parent == NULL)
+    //     {
+    //         fprintf(stderr, "ERROR: count is valid.\n");
+    //         return -1;
+    //     }
+	// }
 	if (deep != 0 || parent == NULL)
 	{
         fprintf(stderr, "deep is valid.\n");
@@ -772,15 +793,7 @@ static int AddTagChunk(PARSER *ap, char *tag_name, uint32_t deep, uint32_t count
 	target_end->end_tag_chunk->name = GetStringIndex(sc, tag_name, 1, extra_size);
 
 	parent = target_start;
-	while (count--)
-	{
-        parent = parent->child;
-        if (parent->chunk_type == CHUNK_ENDNS || parent == NULL)
-        {
-            fprintf(stderr, "ERROR: count is valid.\n");
-            return -1;
-        }
-	}
+
 	target_end->child = parent->child;
 	parent->child->parent = target_end;
 	parent->child = target_end;
